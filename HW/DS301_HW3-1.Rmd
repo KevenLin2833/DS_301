@@ -1,0 +1,267 @@
+---
+title: "DS 301 HW3"
+author: "Keven Lin"
+date: "02/13/2022"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+#setup 
+patient = read.table("patient.txt", header=FALSE)
+names(patient) = c("satisf","age","severe","anxiety")
+head(patient)
+```
+
+***
+# Problem 1: Patiet Data
+***
+
+a. Fit a multiple linear regression model with patient satisfaction as the response (Y ) and age
+(x1), severity of disease (x2), and anxiety (x3) as predictors. Call this model1. What are the
+least-square estimators and their standard errors? Summarize your output in a table here.
+
+```{r}
+model1= lm(satisf ~ age + severe + anxiety, data = patient)
+summary(model1)$coefficient
+```
+
+***
+
+b. Report the residual sum of squares for model1.
+
+```{r}
+deviance(model1)
+```
+
+*** 
+
+c. Report the residual sum of squares for the model with no predictors. You can fit this model
+using the following syntax: null = lm(y ∼ 1, data = patient), where y is patient satisfaction. Explain why the RSS of the null model must be larger than the RSS of model1.
+
+```{r}
+null = lm(satisf ~ 1, data = patient)
+deviance(null)
+```
+
+The reason the RSS is noticiably higher than the previous model is due to the fact that we are fitting satisf to 1. Since satisf does not contain a lot of 1s the RSS is very high. 
+
+***
+
+d. Is model1 a significant improvement over the model with no predictors? In other words,
+does at least one of the predictors have a relationship with Y ? Carry out the appropriate 
+hypothesis test at α = 0.05. You may assume the random errors (ei) are normally distributed.
+Write out the null/alternative hypothesis, test statistic, null distribution, decision rule, and
+conclusion.
+
+```{r}
+summary(model1)$coefficient
+```
+
+Hypothesis: H0 = model1 is not an improvement over null, H1 = model1 is an improvement over null
+
+Test Statistics: model1 summary
+
+Null Distribution: the p value
+
+Decision Rule: p value needs to be less than 0.05 to show that less than 5% of the data is random. 
+
+Conclusion: Since age demonstrate a p value less than 0.05, that means less than 5% of the data is random. Meaning age is statistically significant and we can reject the null hypothesis. 
+
+***
+
+e. Choose one regression coefficient and test whether it is zero or not at α = 0.05. Write out
+the null/alternative hypothesis, test statistic, null distribution, decision rule, and conclusion.
+
+```{r}
+summary(model1)$coefficient
+```
+
+We will choose age
+
+H0: age is not statically significant in satisfaction, H1: age is statically significant in satisfaction
+
+Test Statistics: model1 summary
+
+Null Distribution: the p value
+
+Decision Rule: p value needs to be less than 0.05 to show that less than 5% of the data is random. 
+
+Conclusion: Since age demonstrate a p value less than 0.05, that means less than 5% of the data is random. Meaning age is statistically significant and we can reject the null hypothesis. 
+
+***
+
+
+f. Based on the model, obtain an estimate for the average satisfaction score for patients of
+age 77, disease severity 68, and an anxiety of 3. Quantify the uncertainty surrounding this
+estimate. Does the range of values make sense? Explore the data to justify your reasoning.
+Discuss what this tell us about the limitations of our model.
+
+y =  158.4913 + -1.1416(Age) + -0.4420(severe) + -13.4702(anxiety) + e
+
+```{r}
+test = data.frame(age = c(77), severe = c(68), anxiety = c(3))
+predict(model1, test)
+```
+
+```{r}
+patient %>% arrange(desc(age)) %>% top_n(2)
+patient %>% arrange(desc(severe)) %>% top_n(2)
+patient %>% arrange(desc(anxiety)) %>% top_n(2)
+```
+
+There are several uncertainties that surround this prediction. Where no patient's is above 53 years, has a severity of 68, and an anxiety level of 3. This patient is on the most extreme spectrum of our model and there some major leaps that the model would need to perform to generate the prediction. Based off the general trend that we have observed from the model, the patient's satisfaction is really bleak. I believe the limitation of our model is at the upper limit in data values per column. 
+
+***
+
+g. Explain the difference between what the function predict() outputs compared to what
+model1$fitted.values outputs in R.
+
+predict: Returns prediction for a new set of predictors variables that has never been seen before.
+
+fit: Returns the y-hat values associated with the data used to fit the model
+
+***
+
+h. Obtain an estimate for σ2.
+
+```{r}
+summary(model1)
+```
+10.06^2
+
+***
+
+# Problem 2: Consulting
+
+***
+
+a. The scientist sees that you have set the significance level to be α = 0.05. He wants to know
+what this α = 0.05 means in the context of hypothesis testing. Explain.
+
+The α represents the percentage of random value that is in our data. In other words, if you want to be 95% sure the data is correct, you would want to see 95% of the data is statistically significant and 5% of the data is random. 
+
+***
+
+b. The p-value for the predictor anxiety is 0.0647. It is not significant at α = 0.05 so the
+scientist claims that the predictor is not meaningful and suggests fitting a model without this
+predictor. Do you agree or disagree with their claim? Justify your answer.
+
+Yes, When the p value is high, it indicates that the effect size is indistinguishable from zero statistically. Thus, it is common to remove the predictor from the model. 
+
+***
+
+c. There are future plans to collect additional predictors to better understand factors affecting
+patient satisfaction. Suppose there will be a total of 12 predictors collected in the future.
+The scientist wants to determine whether or not at least one of these predictors is useful in
+predicting Y . He proposes fitting a model with all 12 predictors and then carrying out 12
+individual t-test for each regression coefficient. If it at least one result is significant, he can
+conclude at least one of the predictors is useful in predicting Y . Explain in plain language
+why this might be a bad idea. What is the probability of seeing at least one significant result
+by chance? Use α = 0.1.
+
+There shouldn't be any problems with this assumption. As long as the scientist is not using non effect predictors, than identifying statistically significant variables this is an effective method. Problems can appear if we lower our confidence internal. By lowering the confidence interval, we make the the approval process less restrictive variables to be considered as statically significant. However, this does expand the number of random values that has no effect in proving statistical significant.
+
+***
+
+# Problem 3: Carseats Data
+
+***
+
+```{r}
+# setup
+library(ISLR2)
+head(Carseats)
+```
+
+***
+
+a. Fit a multiple linear regression model to predict carseat unit sales (in thousands) using all
+other variables as your predictors. What are the least-square estimates and their standard
+errors? Summarize your output in a table.
+
+```{r}
+model2 = lm(Sales ~ ., data  = Carseats)
+summary(model2)$coefficient
+```
+
+***
+
+b. Assume that our random errors (i) are normally distributed. Carry out the F-test at α =
+0.05. Write out the null/alternative hypothesis, test statistic, null distribution, p-value, and
+conclusion.
+
+H0: No statistical significant variables, H1: there is a statistical significant variables
+
+Test Statistics: model1 summary
+
+Null Distribution: the p value
+
+Decision Rule: p value needs to be less than 0.05 to show that less than 5% of the data is random. 
+
+Conclusion: Since CompPrice, Income, Advertisiing, Population, Price, and age demonstrate a p value less than 0.05, that means less than 5% of the data is random. Meaning age is statistically significant and we can reject the null hypothesis. 
+
+***
+
+c. Choose one regression coefficient and test whether it is zero or not at α = 0.05. Write out
+the null/alternative hypothesis, test statistic, null distribution, p-value, and conclusion.
+
+```{r}
+null2 = lm(Sales ~ Income, data = Carseats)
+summary(null2)$coefficient
+```
+
+H0: Income has no relationship to sales, H1: Income has a relationship to sales
+
+Test Statistics: model1 summary
+
+Null Distribution: the p value
+
+Decision Rule: p value needs to be less than 0.05 to show that less than 5% of the data is random. 
+
+Conclusion: Since Income demonstrate a p value less than 0.05, that means less than 5% of the data is random. Meaning age is statistically significant and we can reject the null hypothesis.
+
+***
+
+d. Obtain an estimate for σ2.
+
+2.795^2
+
+***
+
+e. Interpret the R2 from the fitted model.
+
+```{r}
+deviance(model2)
+deviance(null2)
+```
+
+```{r}
+402.8335/3108.799
+```
+
+R^2 values tells us that the model does a very poor job at justifying/explaining any of the variaation in the data. 
+
+***
+
+f. Interpret the regression coefficients associated with Shelving Location.
+
+```{r}
+attach(Carseats )
+contrasts (ShelveLoc )
+```
+
+A bad shelving location corresponds to a zero for each of the two dummy variables. The fact that the coefficient for ShelveLocGood in the regression output is positive indicates that a good shelving location is associated with high sales (relative to a bad location). And ShelveLocMedium has a smaller positive coefficient, indicating that a medium shelving location leads to higher sales than a bad shelving location but lower sales than a good shelving location.
+
+***
+
+g. Use the model to predict carseat unit sales when the price charged by competitor is average,
+community income levels is at its median, advertising is 15, population is 500, price for car
+seats at each site is 50, shelving location is good, average age of local population is 30,
+education level is 10, and the store is in an urban location within the US. What is your
+prediction for Y given these predictors? Construct an appropriate interval to quantify the
+uncertainty surrounding this prediction. Set α = 0.01.
+

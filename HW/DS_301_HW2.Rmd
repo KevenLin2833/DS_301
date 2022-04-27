@@ -1,0 +1,191 @@
+---
+title: "DS_301_HW2"
+author: "Keven Lin"
+output: html_document
+---
+
+```{r}
+library(ISLR2)
+```
+
+# Problem 1: Multiple linear regression
+
+## a. How many rows (n) are in the data set? How many variables are in the data set? What does the variable lstat represent?
+```{r}
+#dim(Boston)
+```
+Rows: 506
+
+Variables: 13
+
+lstat: lower status of the population (percent).
+
+
+## b. Fit a simple linear regression model with crim as the response and lstat as the predictor. Describe your results. What are the estimated coefficients from this model? Report them here.
+
+_Note: a simple linear regression is just a regression model with a single predictor._
+
+```{r}
+model = lm(crim ~ lstat, data = Boston)
+model$coefficients
+```
+
+### c. Repeat this process for each predictor in the dataset. That means for each predictor, fit a simple linear regression model to predict the response. Describe your results. In which of the models is there a statistically significant association between the predictor and the response? Create some plots to back up your assertions.
+
+```{r}
+singleModel = vector("numeric",0)
+
+
+zn = lm(crim ~ zn, data = Boston)
+idus = lm(crim ~ indus, data = Boston)
+chas = lm(crim ~ chas, data = Boston)
+nox = lm(crim ~ nox, data = Boston)
+rm = lm(crim ~ rm, data = Boston)
+age = lm(crim ~ age, data = Boston) 
+dis = lm(crim ~ dis, data = Boston)
+rad = lm(crim ~ rad, data = Boston)
+tax = lm(crim ~ tax, data = Boston)
+ptratio = lm(crim ~ ptratio, data = Boston)
+lstat = lm(crim ~ lstat, data = Boston)
+medv = lm(crim ~ medv, data = Boston)
+
+singleModel =  c(singleModel, zn$coefficient[2])
+singleModel =  c(singleModel, idus$coefficient[2])
+singleModel =  c(singleModel, chas$coefficient[2])
+singleModel =  c(singleModel, nox$coefficient[2])
+singleModel =  c(singleModel, rm$coefficient[2])
+singleModel =  c(singleModel, age$coefficient[2])
+singleModel =  c(singleModel, dis$coefficient[2])
+singleModel =  c(singleModel, rad$coefficient[2])
+singleModel =  c(singleModel, tax$coefficient[2])
+singleModel =  c(singleModel, ptratio$coefficient[2])
+singleModel =  c(singleModel, lstat$coefficient[2])
+singleModel =  c(singleModel, medv$coefficient[2])
+
+#summary(zn)
+#summary(idus)
+#summary(chas)
+#summary(nox)
+#summary(rm)
+#summary(age)
+#summary(dis)
+#summary(rad)
+#summary(tax)
+#summary(ptratio)
+#summary(lstat)
+#summary(medv)
+```
+
+All predictors except chas maintain a p value smaller than 0.05. Thus, all predictors except chas are statistically significant. 
+
+### d. Fit a multiple regression model to predict the response using all of the predictors. You can do this from a single line of code: lm(crim~.,data=Boston) Summarize your results. For which predictors can we reject the null hypothesis: H0 : βj = 0?
+
+```{r}
+multipleModel = vector("numeric", 0)
+model = lm(crim ~., data = Boston)
+multipleModel = c(multipleModel, model$coefficients)
+multipleModel = multipleModel[-1]
+summary(model)
+```
+
+After fitting the model, we will keep all predictors except dis, rad, and medv. All values (except the ones stated) consistently show a p value greater than 0.05. As a result, we are rejecting the null hypothesis: H0 : βj = 0 for dis, rad, and medv. Multiple linear regression model is not a good fit for this model because of the low r^2 and adjusted r^2 values. 
+
+### e. How do your results from (c) compare to your results from (d)? Create a table (or a plot) comparing the simple linear regression coefficients from (c) to the multiple regression co- efficients from (d). Describe what you observe. How does this provide evidence that using many simple linear regression models is not sufficient compared to a multiple linear regression model?
+
+```{r}
+plot(singleModel, multipleModel, 
+     xlab = "Multiple Single Linear Regression coefficients",
+     ylab = "multiple regression coefficients",
+     main = "Single Linear Regression vs Multiple Linear Regression")
+```
+
+I see that there is a significant difference between using single linear regression (for each variables) and multiple linear regression. The single linear regression (however several of them) slope is only dependent on the single predictor vs the multiple linear regression slope takes into account of all the predictors. A single predictor cannot represent the outcome and effect of all other predictors. 
+
+### f. First set.seed(1) to ensure we all get the same values. Then, split half the Boston data set into a training set and the remaining half into the test set. On the training set, fit a multiple linear regression model to predict the response using all of the predictors. Report the training MSE and test MSE you obtain from this model.
+
+```{r}
+set.seed(1)
+testIndex = sample(1:506, 506/2, rep=FALSE)
+testBoston = Boston[testIndex, ]
+trainBoston = Boston[-testIndex, ]
+```
+
+```{r}
+modelTrain = lm(crim ~ ., data = trainBoston)
+#summary(modelTrain)
+MSE_train = mean((trainBoston$crim - modelTrain$fitted.values)^2) 
+MSE_train
+yhat = predict(modelTrain, testBoston)
+MSE_test = mean((testBoston$crim - yhat)^2)
+MSE_test
+```
+
+Training MSE: 36.67
+
+Testing MSE: 46.69
+
+### g. On the training set you created in part (f), fit a multiple linear regression model to predict the response using only the predictors zn, indux, nox, dis, rad, ptratio, medv. Report the training MSE and test MSE you obtain from this model. How do they compare to your results in part (f)? Are these results surprising or what you expected?
+
+```{r}
+modelTrain2 = lm(crim ~ zn + indus + nox + dis + rad + ptratio + medv, data = trainBoston)
+
+MSE_Train2 = mean((trainBoston$crim - modelTrain2$fitted.values)^2)
+MSE_Train2
+
+predictors = predict(modelTrain2, testBoston)
+MSE_Test2 = mean((testBoston$crim - predictors)^2)
+MSE_Test2
+```
+
+Training MSE: 36.85
+
+Testing MSE: 46.63
+
+Based on the results we can see that regardless if we use all the predictors or use a select number of predictors, the training and test MSE are nearly identical. 
+
+I wasn't really surprised by the result as all the predictor we used in the second operation were predictors that maintain a significant statistical from their p values in part c. Although, in part c the p value calculation were based on each individual performance. I believe by remove predictors that did not maintain a strong individual significant and then later combined into a multiple linear regression, the training and testing mse will be more accurate. 
+
+### h. Fit the following multiple linear regression model: lm(medv~.,data=Boston)
+
+#### Use this model to answer the following question: A consultant thinks that if all predictors are held equal, a tract on the Charles River (chas) has an effect on median home values (medv). Is there evidence to reject the consultant’s claim? Carry out a hypothesis test (using the above linear regression model) to answer this. Be sure to report your null/alternative hypothesis, test statistic, null distribution, p-value, and conclusion. What additional assumption do we need to make to carry out this hypothesis test?
+
+```{r}
+model = lm(medv~., data = Boston)
+summary(model)
+```
+
+alpha = 0.05
+
+#### I'm Don't know how to do this! Can you please post the solution/explain it? Thanks!!!
+
+### i. Same setup as part (h), but now the consultant claims a tract on the Charles River increases median home values by $5,000. Note that medv is in $1,000’s of dollars. Carry out a hypothesis test to test their claim. Be sure to report your null/alternative hypothesis, test statistic, null distribution, p-value, and conclusion.
+
+#### I'm Don't know how to do this! Can you please post the solution/explain it? Thanks!!!
+
+# Problem 2: Concept Review
+
+### a. List the assumptions needed just to fit a least squares regression model (there should be four). In general, is there an assumption you believe to be particularly problematic?
+
+Linear relationship, independence, homoscedasticity, & normality
+
+Out of all assumptions, we should be concerned about homoscedasticity. Sometimes it can be dangerous to assume homoscedasity (even scatter of residuals and error terms). When the distribution is uneven, this is called heteroscedasticity. The differing distribution of residuals and errors will increases the variance of the regression coefficient estimates, but the regression model doesn’t pick up on this. This will cause a variable to be statically significant when in actuality it is not. 
+
+### b. When asked to state the true population regression model, a fellow student writes it as follows: E(Yi)=β0 +β1xi1 +...+βpxip +εi (i=1,...,n).
+
+_Is this correct? Justify your answer._
+
+This is incorrect because ε (random error term/random deviation) mean that β0 +β1xi1 +...+βpxip(the true population) will become an approximation of the true population regression model. 
+
+### c. Your classmate wants to test whether a regression coefficient is equal to zero or not at α = 0.05. They set up the null and alternative as follows: 
+H0 :βˆj =0versusH1 :βˆj ̸=0. 
+
+_Is this correct? Justify your answer._
+
+Yes this is correct. Default assumption is the coefficient is equal to 0. H1 is what we want prove (value does not equal to 0). And lastly, how accurate we want to be (95% of the time).
+
+### d. True or False: For a given model, the training MSE must always be smaller than the test MSE. Justify your answer.
+
+True. The reason the training me is always smaller than the test MSE is because the training data is what your model is build around. So the training MSE is smaller because it's the data your model should aly seen. 
+
+# Problem 3: Multiple Testing Problem
+

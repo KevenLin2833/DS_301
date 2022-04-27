@@ -1,0 +1,493 @@
+---
+title: "HW 7"
+author: "Keven Lin"
+date: "03/29/2022"
+output: html_notebook
+---
+
+Problem 2: Simulation Studies 
+
+a. 
+
+```{r}
+set.seed(69)
+# I wanna die
+n = 100
+x = rnorm(n)
+x
+error =  rnorm(n, 0, 1)
+error
+```
+
+b.
+
+b0=1, b1 = 1, b2 = 2, b3 = 3
+
+```{r}
+b0=1
+b1 = 1
+b2 = 2
+b3 = 3
+temp.y = rep(NA, n)
+temp.linear = rep(NA, n)
+for(i in 1:n) {
+  error = rnorm(n, 0, 1)
+  y = b0  + b1 * x + b2 * x^2 + b3 * x^3 + error 
+  temp.y[i] = y 
+}
+
+temp.y
+```
+
+```{r}
+temp.y
+```
+
+c. 
+
+```{r}
+library(leaps)
+
+df = data.frame(x1=x, x2=x^2, x3=x^3, x4=x^4, x5=x^5, x6=x^6, x7=x^7, x8=x^8, x9=x^9, x10=x^10, y = temp.y)
+
+
+regfit = regsubsets(y~., data=df, nvmax = 9, nbest=10)
+print("------------")
+regfit.sum = summary(best,matrix=TRUE,matrix.logical=FALSE,df=NULL)
+
+regfit.sum
+names(regfit.sum)
+
+n = dim(Hitters)[1]
+p = rowSums(regfit.sum$which)
+adjr2 = regfit.sum$adjr2
+cp = regfit.sum$cp
+rss = regfit.sum$rss
+AIC = n*log(rss/n) + 2*(p)
+BIC = n*log(rss/n) + (p)*log(n)
+
+
+AIC
+print("------------")
+BIC
+print("------------")
+
+print("aic")
+which.min(AIC)
+print("bic")
+which.min(BIC)
+
+
+```
+
+
+
+d. 
+
+```{r}
+
+df = data.frame(x1=x, x2=x^2, x3=x^3, x4=x^4, x5=x^5, x6=x^6, x7=x^7, x8=x^8, x9=x^9, x10=x^10, y = temp.y)
+
+regfit = regsubsets(y~., data=df, nvmax = 10, nbest=10)
+print("------------")
+regfit.sum = summary(best,matrix=TRUE,matrix.logical=FALSE,df=NULL)
+
+regfit.sum
+names(regfit.sum)
+
+n = dim(Hitters)[1]
+p = rowSums(regfit.sum$which)
+adjr2 = regfit.sum$adjr2
+cp = regfit.sum$cp
+rss = regfit.sum$rss
+AIC = n*log(rss/n) + 2*(p)
+BIC = n*log(rss/n) + (p)*log(n)
+
+
+AIC
+print("------------")
+BIC
+print("------------")
+
+print("bic")
+which.min(BIC)
+print("R^2")
+which.min(adjr2)
+```
+
+
+
+e.
+
+```{r}
+regfit = regsubsets(y~., data=df, nvmax = 10, nbest=10, method="forward")
+print("------------")
+regfit.sum = summary(best,matrix=TRUE,matrix.logical=FALSE,df=NULL)
+
+names(regfit.sum)
+
+n = dim(Hitters)[1]
+p = rowSums(regfit.sum$which)
+adjr2 = regfit.sum$adjr2
+cp = regfit.sum$cp
+rss = regfit.sum$rss
+AIC = n*log(rss/n) + 2*(p)
+BIC = n*log(rss/n) + (p)*log(n)
+
+print("forward selection")
+print("bic")
+which.min(BIC)
+print("R^2")
+which.min(adjr2)
+```
+
+```{r}
+regfit = regsubsets(y~., data=df, nvmax = 10, nbest=10, method="backward")
+print("------------")
+regfit.sum = summary(best,matrix=TRUE,matrix.logical=FALSE,df=NULL)
+
+names(regfit.sum)
+
+n = dim(Hitters)[1]
+p = rowSums(regfit.sum$which)
+adjr2 = regfit.sum$adjr2
+cp = regfit.sum$cp
+rss = regfit.sum$rss
+AIC = n*log(rss/n) + 2*(p)
+BIC = n*log(rss/n) + (p)*log(n)
+
+print("backward selection")
+print("bic")
+which.min(BIC)
+print("R^2")
+which.min(adjr2)
+```
+f.
+
+```{r}
+library(glmnet)
+
+temp.x = model.matrix(y~., data = df)[,-1]
+Y = df$y
+
+grid = 10^seq(10,-2,length=100)
+lasso_model = glmnet(temp.x ,Y,alpha=1, lambda=grid)
+coef(lasso_model) #20 by 100 matrix (20 rows = one row for each predictor + intercept, 100 colummns = 1 for each value of lambda)
+dim(coef(lasso_model)) 
+
+lasso_model$lambda[50]
+coef(lasso_model)[,50]
+sqrt(sum(coef(lasso_model)[-1,50]^2))
+
+
+lasso_model$lambda[60]
+coef(lasso_model)[,60]
+plot(lasso_model)
+predict(lasso_model,s = 50, type = 'coefficients')[1:10,]
+```
+
+
+g. 
+
+B0 = 1
+B7 = 7
+```{r}
+b0 = 1
+b7 = 7
+
+n = 100
+x = rnorm(n)
+x
+error =  rnorm(n, 0, 1)
+error
+temp.y = rep(NA, n)
+temp.linear = rep(NA, n)
+for(i in 1:n) {
+  error = rnorm(n, 0, 1)
+  y = b0  + b7*x^7 + error 
+  temp.y[i] = y 
+}
+
+
+df1 = data.frame(x1=x, x2=x^2, x3=x^3, x4=x^4, x5=x^5, x6=x^6, x7=x^7, x8=x^8, x9=x^9, x10=x^10, y = temp.y)
+```
+
+```{r}
+regfit = regsubsets(y~., data=df1, nvmax = 10, nbest=10)
+print("------------")
+regfit.sum = summary(best,matrix=TRUE,matrix.logical=FALSE,df=NULL)
+
+regfit.sum
+names(regfit.sum)
+
+n = dim(Hitters)[1]
+p = rowSums(regfit.sum$which)
+adjr2 = regfit.sum$adjr2
+cp = regfit.sum$cp
+rss = regfit.sum$rss
+AIC = n*log(rss/n) + 2*(p)
+BIC = n*log(rss/n) + (p)*log(n)
+
+
+AIC
+print("------------")
+BIC
+print("------------")
+print("aic")
+which.min(AIC)
+print("bic")
+which.min(BIC)
+print("R^2")
+which.min(adjr2)
+```
+
+```{r}
+temp.x = model.matrix(y~., data = df1)[,-1]
+Y = df1$y
+
+grid = 10^seq(10,-2,length=100)
+lasso_model = glmnet(temp.x ,Y,alpha=1, lambda=grid)
+coef(lasso_model) #20 by 100 matrix (20 rows = one row for each predictor + intercept, 100 colummns = 1 for each value of lambda)
+dim(coef(lasso_model)) 
+
+lasso_model$lambda[50]
+coef(lasso_model)[,50]
+sqrt(sum(coef(lasso_model)[-1,50]^2))
+
+
+lasso_model$lambda[60]
+coef(lasso_model)[,60]
+plot(lasso_model)
+predict(lasso_model,s = 50, type = 'coefficients')[1:10,]
+```
+
+Problem 3: Regularized Regression Models
+
+a. 
+
+```{r}
+library(ISLR2)
+Hitters = na.omit(Hitters)
+n = nrow(Hitters) #there are 263 observations
+x = model.matrix(Salary ~.,data=Hitters)[,-1] #19 predictors
+Y = Hitters$Salary
+set.seed(1)
+train = sample(1:nrow(x), nrow(x)/2)
+test=(-train)
+Y.test = Y[test]
+```
+
+b. 
+
+```{r}
+Hitters = na.omit(Hitters)
+x = model.matrix(Salary~.,data=Hitters)[,-1] 
+Y = Hitters$Salary
+grid = 10^seq(10,-2,length=100)
+ridge_model = glmnet(x,Y,alpha=0, lambda=0.013)
+
+coef(ridge_model) #20 by 100 matrix (20 rows = one row for each predictor + 
+predict(ridge_model,s = 50, type = 'coefficients')[1:20,]
+```
+
+c. 
+
+```{r}
+Hitters = na.omit(Hitters)
+x = model.matrix(Salary~.,data=Hitters)[,-1] 
+Y = Hitters$Salary
+grid = 10^seq(10,-2,length=100)
+ridge_model = glmnet(x,Y,alpha=0, lambda=10^10)
+
+coef(ridge_model) #20 by 100 matrix (20 rows = one row for each predictor + 
+predict(ridge_model,s = 50, type = 'coefficients')[1:20,]
+```
+
+e. 
+
+```{r}
+grid = 10^seq(10,-2,length=100)
+ridge_model = glmnet(x,Y,alpha=0) #default lambda amount is 100
+ridge_model
+
+ridgePredicted = predict(ridge_model,s = 0.013, type = 'coefficients')[1:20,]
+print("lambda = 0.013")
+mean((ridgePredicted-Y)^2)
+
+print("lambda = 10^10")
+ridgePredicted = predict(ridge_model,s = 10^10, type = 'coefficients')[1:20,]
+mean((ridgePredicted-Y)^2)
+```
+
+
+f. 
+
+```{r}
+grid = 10^seq(10,-2,length=100)
+ridge_model = cv.glmnet(x,Y,alpha=0) #default lambda amount is 100
+ridge_model
+
+plot(ridge_model)
+coef(ridge_model)
+```
+
+g.
+
+```{r}
+grid = 10^seq(10,-2,length=100)
+ridge_model = cv.glmnet(x,Y,alpha=0) #default lambda amount is 100
+ridge_model$lambda.1se
+```
+
+h.
+
+```{r}
+grid = 10^seq(10,-2,length=100)
+ridge_model = cv.glmnet(x,Y,alpha=1) #default lambda amount is 100
+ridge_model
+
+plot(ridge_model)
+coef(ridge_model)
+```
+i. 
+
+```{r}
+grid = 10^seq(10,-2,length=100)
+ridge_model = glmnet(x,Y,alpha=0) #default lambda amount is 100
+
+ridgePredicted = predict(ridge_model,s = 2.44, type = 'coefficients')[1:20,]
+print("lambda = 2.44")
+mean((ridgePredicted-Y)^2)
+
+print("lambda = 2935.1")
+ridgePredicted = predict(ridge_model,s = 2935.1, type = 'coefficients')[1:20,]
+mean((ridgePredicted-Y)^2)
+
+
+grid = 10^seq(10,-2,length=100)
+ridge_model = glmnet(x,Y,alpha=1) #default lambda amount is 100
+
+ridgePredicted = predict(ridge_model,s = 2.67, type = 'coefficients')[1:20,]
+print("lambda = 2.67")
+mean((ridgePredicted-Y)^2)
+
+print("lambda = 69.40")
+ridgePredicted = predict(ridge_model,s = 69.40, type = 'coefficients')[1:20,]
+mean((ridgePredicted-Y)^2)
+
+```
+
+j. 
+
+```{r}
+grid = 10^seq(10,-2,length=100)
+ridge_model = glmnet(x,Y,alpha=0) #default lambda amount is 100
+
+ridgePredicted = predict(ridge_model,s = 2.44, type = 'coefficients')[1:20,]
+print("========Ridge ===============")
+print("Min: lambda = 2.44")
+ridgePredicted
+print
+print("1se: lambda = 2935.1")
+ridgePredicted = predict(ridge_model,s = 2935.1, type = 'coefficients')[1:20,]
+ridgePredicted
+
+grid = 10^seq(10,-2,length=100)
+ridge_model = glmnet(x,Y,alpha=1) #default lambda amount is 100
+
+ridgePredicted = predict(ridge_model,s = 2.67, type = 'coefficients')[1:20,]
+print("========lasso ===============")
+print("Min: lambda = 2.67")
+ridgePredicted
+
+print("1se: lambda = 69.40")
+ridgePredicted = predict(ridge_model,s = 69.40, type = 'coefficients')[1:20,]
+ridgePredicted
+
+
+
+```
+
+Problem 4: 
+
+a. 
+
+```{r}
+library(ISLR2)
+size = floor(0.70*nrow(College))
+
+index = sample(seq_len(nrow(College)), size = size)
+train = College[index,]
+test = College[-index, ]
+```
+
+b. 
+
+```{r}
+model = lm(Apps~., data=College)
+testMSE = mean(model$residuals^2)
+forward.fit = regsubsets(Apps ~., data=train, nbest=1, nvmax=17, method=c("forward"))
+
+
+errors = rep(NA, 17)
+
+for(i in 1:17) {
+  test.temp = model.matrix(Apps~., data = test)
+  coef.model = coef(forward.fit, id=i)
+  
+  pred = test.temp[, names(coef.model)]%*%coef.model
+  errors[i] = mean((test$Apps-pred)^2)
+}
+
+errors
+```
+c. 
+
+```{r}
+
+ridgePredicted = glmnet(train, train$Apps, alpha=0)
+ridgePredicted
+```
+
+d. 
+
+```{r}
+n = nrow(College) #there are 263 observations
+x = model.matrix(Apps ~.,data=train)[,-1]
+ridge_model = cv.glmnet(x, train$Apps,alpha=0) #default lambda amount is 100
+ridge_model
+
+plot(ridge_model)
+coef(ridge_model)
+```
+
+e. 
+
+```{r}
+x = model.matrix(Apps ~.,data=test)[,-1]
+ridge_model = cv.glmnet(x, test$Apps,alpha=0) #default lambda amount is 100
+ridge_model
+
+plot(ridge_model)
+coef(ridge_model)
+
+ridgePredicted = predict(ridge_model,s = 376.5, type = 'coefficients')[1:18,]
+print("lambda = 376.5")
+mean((ridgePredicted-Y)^2)
+```
+
+f. 
+
+```{r}
+ridgePredicted = glmnet(test, test$Apps, alpha=1)
+ridgePredicted
+
+
+x = model.matrix(Apps ~.,data=test)[,-1]
+ridge_model = cv.glmnet(x, test$Apps,alpha=1) #default lambda amount is 100
+ridge_model
+
+plot(ridge_model)
+coef(ridge_model)
+mean((ridgePredict-test$Apps)^2)
+```

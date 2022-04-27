@@ -1,0 +1,290 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+
+```{r}
+#Setup
+insurance = read.csv("insurance.csv")
+data = insurance
+head(data)
+data$gender = as.factor(data$gender)
+data$smoker = as.factor(data$smoker)
+data$region = as.factor(data$region)
+str(data)
+```
+
+---
+
+## Problem 1: Insurance Data
+
+### a. 
+Done in setup
+
+### b.
+
+```{r}
+fit = lm(charges ~ age + bmi + gender, data = data)
+summary(fit)
+```
+
+So we can see that age and bmi is statistically significant to charges as their p values is below 0.05. 
+
+### c. 
+
+```{r}
+
+data$gender <- relevel(data$gender, ref = "female")
+male1 = lm(charges ~ age + bmi + gender, data = data)
+summary(male1)
+```
+
+Y = -6986.82 + 243.19(x1) + 327.54(x2) + 1344.46(x3) + e
+
+```{r}
+data$gender <- relevel(data$gender, ref = "male")
+female1 = lm(charges ~ age + bmi + gender, data = data)
+summary(female1)
+```
+
+y = -5642.35 + 243.19(x1) + 327.54(x2) + -1344.46(x3) + e
+
+### d. 
+
+```{r}
+males = data[data$gender=="male",]
+fit_males = lm(charges ~ age + bmi, data = males)
+summary(fit_males)
+summary(fit_males$fitted.values)
+```
+
+```{r}
+females = data[data$gender=="female",]
+fit_females = lm(charges ~ age + bmi, data = females)
+summary(fit_females)
+```
+
+Male regression coefficients: 2619.78
+
+Female regression coefficients: 2286.14
+
+### e. Compare your results in part (d) to part (c). Is the model you obtained for males only in part (c) the same as fit males? What about for females? Explain in plain language to your classmate why these two approaches will not give the same results.
+
+The first model shows that there is some difference in the intercept (the cost of insurance) for males and females. While the second model better explain the difference in cost between males and females by showing how the age and bmi of either genders plays into the cost of their insurance. 
+
+### f.  The model from part (b) has a significant F-test statistic, which tells us the overall model is jointly significant and at least one of the regression coefficients is significantly different from zero. However, the R2 is quite low. Are these results contradictory? Explain.
+
+```{r}
+fit = lm(charges ~ age + bmi + gender, data = data)
+summary(fit)
+```
+
+The results are not contradictory. F stat explains the overall how well our model fits the model with no independent variables. R^2 explains how well our model fits the data. In this senario, high f stat and low r square mean we reject the null hypothesis that the coefficient are 0, but hte variance of the residual is very large. 
+
+## Problem 2: Predictions in the presence of multicollinearity
+
+### a. Is multicollinearity a problem for making accurate predictions? If you’re unsure, make an educated guess based on what we have learned in class.
+
+Multidisciplinary undermines the statically significance of an independent variable, yet it does not effect the predictive accuracy of a model. So the key take away for a multilinearity problem is the the RSS will have a high error rate. 
+
+### b. 
+
+```{r}
+set.seed(42)
+x1 = runif(100)
+x2 = 0.8*x1 + rnorm(100,0,0.1)
+  
+cor(x1, x2)
+y = 3 + 2*x1 + 4*x2
+y
+```
+
+### c. 
+
+```{r}
+y_train = y[1:50]
+x1_train = x1[1:50]
+x2_train = x2[1:50]
+
+train = data.frame (y = y_train, x1 = x1_train, x2 = x2_train)
+training = lm(y ~ x1+x2, data = train)
+train_sum = summary(training)
+mean(train_sum$residuals^2)
+```
+
+### d.
+
+```{r}
+B = 2500
+n = 50
+MSE_Data = rep(NA, B)
+for(i in 1:B){
+  
+  x1 = runif(100)
+  x2 = 0.8*x1 + rnorm(100,0,0.1)
+  error = rnorm(n,0,1)
+  y = 3 + 2*x1 + 4*x2 + error
+  
+  y_train = y[1:50]
+  x1_train = x1[1:50]
+  x2_train = x2[1:50]
+  
+  train = data.frame (y = y_train, x1 = x1_train, x2 = x2_train)
+  training = lm(y ~ x1+x2, data = train)
+  MSE_Data[i] =  mean(training$residuals^2)
+}
+
+hist(MSE_Data)
+mean(MSE_Data)
+```
+
+### e.
+```{r}
+
+set.seed(24)
+x1 = runif(100)
+x2 = rnorm(100,0,1)
+
+cor(x1, x2)
+y = 3 + 2*x1 + 4*x2
+y
+```
+
+### f. 
+
+```{r}
+B = 2500
+n = 50
+MSE_Data = rep(NA, B)
+for(i in 1:B){
+  
+  x1 = runif(100)
+  x2 = 0.8*x1 + rnorm(100,0,0.1)
+  error = rnorm(n,0,1)
+  y = 3 + 2*x1 + 4*x2 + error
+  
+  y_train = y[1:50]
+  x1_train = x1[1:50]
+  x2_train = x2[1:50]
+  
+  train = data.frame (y = y_train, x1 = x1_train, x2 = x2_train)
+  training = lm(y ~ x1+x2, data = train)
+  MSE_Data[i] =  mean(training$residuals^2)
+}
+
+hist(MSE_Data)
+mean(MSE_Data)
+```
+
+### g. 
+
+Based on our observation from both models, we can confidingly concluded that multicollinearity does not effect the accuracy of our models as the MSE is nearly identical. 
+
+---
+
+## Problem 3: Model Diagnostics
+
+```{r}
+library(ISLR2)
+```
+
+### a. 
+
+```{r}
+noMPG = Auto[, !names(Auto) %in% c("mpg", "name")]
+plot(noMPG$cylinders, Auto$mpg)
+plot(noMPG$displacement, Auto$mpg)
+plot(noMPG$horsepower, Auto$mpg)
+plot(noMPG$weight, Auto$mpg)
+plot(noMPG$acceleration, Auto$mpg)
+plot(noMPG$year, Auto$mpg)
+plot(noMPG$origin, Auto$mpg)
+```
+
+I can see the horsepower and weight are the only non linear relationships with mpg. 
+
+### b. 
+
+```{r}
+model3 = lm(Auto$mpg ~ ., data = noMPG)
+summary(model3)
+```
+
+Based on our model, I can see that displacement, weight, year, and origin has a statistically significant association to mpg as their P values are incredibly small. Small p values mean that there is a very small percentage of the data in these variables that are considered random. So these predictors values are statistically significant. 
+
+### c. 
+
+Yes, look at B. 
+
+### d. 
+
+Based off our model, we can say that for every 1 increase in year, the mpg will increase by 0.75. 
+
+### e. 
+
+No, based on what we had demonstrated in problem 2, we can safely concluded that multicollinearity is not an issue as it does not effect the accuracy of the model. 
+
+### f.
+
+```{r}
+summary(model3)
+model_log = lm(Auto$mpg~log(cylinders) + log(displacement) + log(horsepower) + log(weight) + log(acceleration) + log(year), data=noMPG)
+summary(model_log)
+```
+
+Based on our models, we can see that linearity holds as there are less statistically significant values in the logamatic problems model compare to a linear model. 
+
+### g. 
+```{r}
+summary(model3)
+model_log = lm(Auto$mpg~log(cylinders) + log(displacement) + log(horsepower) + log(weight) + log(acceleration) + log(year), data=noMPG)
+summary(model_log)
+```
+
+Let's run a log transformation and see if we can generate more p values than linear regression and a lower R^2. After generating the model, we can see that log transformation is less effective than a linear model. The linear model has more variables that is statistically significant and it has a smaller adjusted R^2. 
+
+## Problem 4: Wrapping up Multiple Linear Regression
+
+### a. Write out the population multiple linear regression model.
+
+y = B0 + B1x2 + B2x2 ... Bkxk + e
+
+### b. Conceptually, how do we obtain the least square estimates for a multiple linear regression model?
+
+Our goal is to find coefficient estimates B hat 0 and B hat 1 such that the linear model fits the data well. In other words, we want to find the line to be as closed as possible to the data points. 
+
+### c. Are these least square estimates trustworthy? How do we know? Explain any key concepts in plain language.
+
+Least squares estimators cannot really be fully trusted as they are simply estimators and do not represent the true value of the data. Due to the nature that the model could be flawed, the LSE will only carry that bias. 
+
+### d.What is our estimate for E(Y) for specific values of X? Clearly define any quantities. How do we quantify any uncertainty about our estimate for E(Y )?
+
+E(y) is the True prediction prediction error in a model. The TPE is equal to the Training error + the test error. E(y) produced the true error of our model based on our predictors. 
+
+### e. What is our prediction for Y for specific values of X? Clearly define any quantities. How do we quantify any uncertainty about our prediction?
+
+Yhat is the outcome generated by our combination of predictors (X) by our model. We assume taht there is some relationship between Y and X, our goal is the estimate (learn) the function f, using a set of training data (Yhat = fhat(x)). Where fhat represents the resulting prediction for y. 
+
+### f. How can we evaluate how good our model is at prediction? Explain what the bias-variance tradeoff tells us about model behavior.
+
+We use MSE to evaluate the training and test MSE. The lower the MSE, the less error there is our model compare to the actual data. 
+
+### g. What is statistical inference and why is it useful in the context of linear regression models?
+
+Use stats to to generate statistical metrics there the user utilized logic to determine the ultimate result. 
+
+### h. What are 3 potential issues that may arise with our multiple linear regression model? For each of these issues, explain 1. why the issue can cause problems and 2. what can be done to resolve the issue.
+
+Non-linearity 
+* The reason for this problem is one of the assumptions involved in linear regression. It is the assumption for linearity, which states that the relation between the predictor and response is linear. If the actual relation between response and the predictor is not linear, then all the conclusion we draw becomes null and void. Also, the accuracy of the model may drop significantly.
+
+correlation of error terms
+* A principal assumption of the linear model is that the error terms are uncorrelated. The “uncorrelated” terms indicated that the sign of error for one observation is independent of others. The correlation among error terms may occur due to several factors. For instance, if we are observing the weight and height of people. The correlation in error may occur due to the diet they consume, the exercise they do, environmental factors, or they are members of the same family. What happens to the model when errors are correlated? If the error terms are correlated then the standard error in the model coefficients gets underestimated. As a result, confidence and prediction intervals will be narrower than they should be.
+
+
+non constant variance of error terms
+* The source of this problem is also an assumption. The assumption is that the error term has a constant variance, also referred to as Homcedacity. Generally, that is not the case. We can often identify a non-constant variance in errors, or heteroscedasticity, from the presence of funnel shape in residual plots. In Fig.2, the funnel represents that the error terms have non-constant variance.

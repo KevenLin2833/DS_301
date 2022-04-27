@@ -1,0 +1,256 @@
+---
+title: "HW 8"
+author: "Keven Lin"
+date: "04/04/2022"
+output: html_notebook
+---
+
+```{r}
+library(ISLR2)
+head(Boston)
+library(tidyr)
+library(caret)
+library(ggplot2)
+```
+
+
+# Problem 1: Bootstrap 
+
+a. 
+```{r}
+beta0_star = summary(lm(medv~crim + age,data=Boston))$coef[1,1]
+se_b0_star = summary(lm(medv~crim + age,data=Boston))$coef[1,2]
+
+beta1_star = summary(lm(medv~crim + age,data=Boston))$coef[2,1]
+se_b1_star = summary(lm(medv~crim + age,data=Boston))$coef[2,2]
+
+beta2_star = summary(lm(medv~crim + age,data=Boston))$coef[3,1]
+se_b2_star = summary(lm(medv~crim + age,data=Boston))$coef[3,2]
+
+B = 500
+m = 100
+
+Fstar0 = rep(0,B)
+Fstar1 = rep(0,B)
+Fstar2 = rep(0,B)
+beta0_m = rep(0,m)
+beta1_m = rep(0,m)
+beta2_m = rep(0,m)
+
+n =  dim(Boston)[1]
+for(b in 1:B){
+  index = sample(1:n,n,replace=TRUE)
+  bootsample=Boston[index,]
+  fit = lm(medv~crim + age,data=bootsample)
+  beta0 =  coef(fit)[1]
+  beta1 =  coef(fit)[2]
+  beta2 =  coef(fit)[3]
+
+  for(i in 1:m){
+    index2 = sample(index,n,replace=TRUE)
+    bootsample2 = Boston[index2,]
+    fit2 = lm(medv~crim + age,data=bootsample2)
+    beta0_m[i] = coef(fit2)[1]
+    beta1_m[i] = coef(fit2)[2]
+    beta2_m[i] = coef(fit2)[3]
+  }
+  se_b0 = sqrt(sum((beta0_m-mean(beta0_m))^2)/(m-1))
+  se_b1 = sqrt(sum((beta1_m-mean(beta1_m))^2)/(m-1))
+  se_b2 = sqrt(sum((beta2_m-mean(beta2_m))^2)/(m-1))
+  Fstar0[b] = (beta0 - beta0_star)/se_b0
+  Fstar1[b] = (beta1 - beta1_star)/se_b1
+  Fstar2[b] = (beta2 - beta2_star)/se_b2
+  #print(Fstar[b])
+}
+``` 
+
+```{r}
+hist(Fstar0)
+hist(Fstar1)
+hist(Fstar2)
+```
+
+b. 
+
+```{r}
+confint(lm(medv ~ crim + age, data=Boston))
+
+print("beta0")
+beta0_star + quantile(Fstar0,0.025)*se_b0_star
+beta0_star + quantile(Fstar0,0.975)*se_b0_star
+print("beta1")
+beta1_star + quantile(Fstar1,0.025)*se_b1_star
+beta1_star + quantile(Fstar1,0.975)*se_b1_star
+print("beta2")
+beta2_star + quantile(Fstar2,0.025)*se_b2_star
+beta2_star + quantile(Fstar2,0.975)*se_b2_star
+```
+
+c. 
+
+```{r}
+median(Boston$medv,na.rm=TRUE)
+```
+
+d. 
+
+```{r}
+B = 2000
+medianBoot = rep(NA, 2000)
+for(b in 1:B) {
+  index = sample(1:n, n, replace=TRUE)
+  bootstrap = Boston[index, ]
+
+  ## obtain median of horsepower
+  medianBoot[b] = median(bootstrap$medv, na.rm = TRUE)
+}
+
+sqrt(sum((medianBoot-mean(medianBoot))^2)/(B-1))
+```
+
+e. 
+
+```{r}
+beta0_star + quantile(Fstar0,0.025)*se_b0_star
+beta0_star + quantile(Fstar0,0.975)*se_b0_star
+```
+
+f. 
+
+```{r}
+quantile(Boston$medv, 0.1)
+```
+##############
+##############
+
+Problem 2: Email Spam
+
+```{r}
+spam = read.csv('spambase.data',header=FALSE)
+```
+
+a. 
+
+```{r}
+table(spam$V58)
+1813 / 2788 
+```
+
+b. 
+
+```{r}
+library(caret)
+index = createDataPartition(spam$V58, p = 0.60)
+train = spam[as.numeric(index[[1]]),]
+test = spam[as.numeric(-index[[1]]),]
+
+table(train$V58)
+1105 / 1656 
+table(test$V58)
+708 / 1132  
+```
+
+c. 
+
+```{r}
+model = glm(V58 ~., data = train, family = binomial)
+probabilities = model %>% predict(test, type = "response")
+names(probabilities) = NULL
+head(probabilities, 10)
+# Model accuracy
+#mean(predicted.classes == test.data$diabetes)
+```
+
+d. 
+
+```{r}
+predictValue = factor(ifelse(probabilities > 0.5, 1, 0))
+testValue = factor(test$V58)
+confusionMatrix(predictValue, testValue)
+
+mean(predictValue != testValue)
+```
+##################
+##################
+Problem 3: Weekly Data Set
+
+a. 
+
+```{r}
+plot(Weekly)
+```
+b. 
+
+```{r}
+model = glm(Direction ~Lag1 + Lag2 + Lag3 + Lag4 + Lag5 + Volume, data = Weekly, family = binomial)
+summary(model)
+```
+
+c. 
+
+```{r}
+probabilities = model$fitted.values
+names(probabilities) = NULL
+
+predictValue = factor(ifelse(probabilities > 0.5, "Up", "Down"))
+testValue = factor(Weekly$Direction)
+confusionMatrix(predictValue, testValue)
+
+mean(predictValue != testValue)
+```
+
+d. 
+
+```{r}
+library(dplyr)
+train = Weekly %>% filter(Year <= 2008)
+test = Weekly %>% filter(Year >= 2009)
+
+model = glm(Direction ~ Lag2, data = train, family = binomial)
+summary(model)
+
+probabilities = model$fitted.values
+names(probabilities) = NULL
+
+predictValue = factor(ifelse(probabilities > 0.5, "Up", "Down"))[1:104]
+
+testValue = factor(test$Direction)
+confusionMatrix(predictValue, testValue)
+
+mean(predictValue != testValue)
+```
+
+####################
+####################
+
+Problem 3: Limitations of Logistic Regression
+
+a.
+
+```{r}
+x = c(-2, 5, -1, 10, 5)
+y = as.factor(c("red", "blue", "red", "blue", "blue"))
+df = data.frame(x, y)
+df
+```
+
+```{r}
+df %>% group_by(y) %>%  ggplot(aes(x=x, y=y)) + geom_point()
+```
+
+
+b. 
+
+```{r}
+model = glm(y ~ x, data = df, family = binomial)
+summary(model)
+
+red = df %>% filter(y == "red")
+summary(glm(y ~ x, data = red, family = binomial))
+
+blue = df %>% filter(y == "blue")
+summary(glm(y ~ x, data = blue, family = binomial))
+```
+
+c. 
+

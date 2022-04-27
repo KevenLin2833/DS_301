@@ -1,0 +1,16 @@
+---
+title: "HW 8"
+author: "Keven Lin"
+date: "04/04/2022"
+output: html_notebook
+---
+
+```{r}
+library(tidyr)
+library(caret)
+library(ggplot2)
+```
+```{r}
+data = read.csv('heart_2020_cleaned.csv',header=FALSE)
+data
+```

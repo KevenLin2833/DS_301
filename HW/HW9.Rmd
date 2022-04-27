@@ -1,0 +1,107 @@
+---
+title: "HW9"
+author: "Keven Lin"
+date: "04/20/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Problem 2: Practicing Data Simulations
+
+a.
+
+```{r}
+set.seed(1)
+x1 = rnorm(1000,0,0.9) # create 3 predictors
+x2 = rnorm(1000,1,1)
+x3 = rnorm(1000,0,2)
+
+#true population parameters
+B0 = 1
+B1 = 2
+B2 = 3
+B3 = 2
+
+# construct the true probability of Y =1 using the logistic function.
+pr = 0.9
+# randomly generate our response y based on these probabilities
+y = rbinom(1000,1,pr)
+df = data.frame(y=y,x1=x1,x2=x2, x3=x3)
+df
+```
+
+b. 
+
+```{r}
+
+glm.fit = glm(y~., data=df, family='binomial')
+summary(glm.fit)
+
+glm.prob = predict(glm.fit,df,type='response') 
+head(glm.prob, 10)
+
+glm.pred = rep(0,length(df$y))
+glm.pred[glm.prob >0.5] = 1
+```
+
+```{r}
+table(glm.pred,df$y)
+# This matrix is called our confusion matrix
+```
+
+```{r}
+# what is our misclassification rate? 
+1-mean(glm.pred == df$y)
+
+```
+
+c. 
+
+```{r}
+library(MASS)
+lda.fit = lda(y~.,data=df)
+
+lda.fit
+
+lda.pred = predict(lda.fit,df)
+names(lda.pred)
+
+
+head(lda.pred$class) # automatically assigns Y to the class with largest probability 
+head(lda.pred$posterior)
+#P(Y=0|X)
+#P(Y=1|X)
+```
+
+```{r}
+table(lda.pred$class,df$y)
+```
+
+```{r}
+mean(lda.pred$class!=df$y) #misclassification rate (on test set)
+mean(lda.pred$class==df$y)
+```
+
+d. 
+
+```{r}
+library(class)
+df
+test = 1:1000
+train.X = df[-test,]
+test.X = df[test,]
+train.Y = df$y[-test]
+test.Y = df$y[test]
+
+knn.pred = knn(df$x1,df$x2,df$x3,df$y,k=1)
+head(knn.pred)
+
+table(knn.pred,df$y)
+mean(df$y!=knn.pred)
+
+table(df$y)
+mean(df$y=="Yes")
+```

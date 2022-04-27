@@ -1,0 +1,225 @@
+---
+title: "DS  301 HW 1"
+author: "Keven Lin"
+Date: 2/1/2022
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r}
+library(ISLR2)
+library(tidyverse)
+```
+
+## Problem 2: Multiple linear regression
+
+### a. How many observations are in the data set? How many variables?
+
+```{r}
+#head(College)
+dim(College)
+#str(College)
+```
+
+Observation: 777
+
+Variables: 18
+
+
+### b. Pull up the help page on the College data set (?College). Copy/paste the one-line description of the data set here.
+
+```{r}
+(?College)
+```
+
+Statistics for a large number of US Colleges from the 1995 issue of US News and World Report.
+
+### c. Extract the 278th row of the data set. What college does it correspond to? Copy/paste that row here.
+
+```{r}
+College[278, ]
+```
+
+Iowa State University
+
+### d. Obtain the average graduation rate across all colleges. How does Iowa State University compare?
+
+```{r}
+mean(College$Grad.Rate)
+College[278,]
+```
+
+Average Graduation Rate Across All Colleges: 65.46332
+
+Iowa State Graduation Rate: 65
+
+Basically identical. 
+
+### e. Fit a simple linear regression model with the predictor as student-to-faculty-ratio and the response as graduation rate. Summarize the output from the model: the least square estimators, their standard errors, and corresponding p-values. Do not just copy/paste raw R output here. Interpret your results; what does the βˆ1 tell us about the relationship between these two variables?
+
+```{r}
+model = lm(Grad.Rate ~ S.F.Ratio, data = College)
+names(model)
+```
+
+```{r}
+model$coefficients
+```
+Least Square Estimators :
+
+yˆ = βˆ0 + βˆ1 * Student/Faculty Ratio
+
+βˆ0 = 84.217
+ 
+βˆ1 = -1.331
+
+βˆ1 tells us that there is a negative correlation between graduation rate and student/faculty ratio. As the student/faculty ratio increase (student pop increase faster than facultiy pop) the graduation rate will drop. 
+
+```{r}
+summary(model)
+```
+
+Standard Errors: 16.36 on 775 degrees of freedom
+
+P Value: < 2.2e-16
+
+
+
+### f. Draw the scatterplot of Y (graduation rate) versus X (student-to-faculty-ratio) and add the least squares line to the scatterplot.
+```{r}
+College %>% ggplot(aes(y=Grad.Rate, x=S.F.Ratio)) + geom_point() + geom_smooth(method='model') + geom_abline(intercept = 84.217, slope = -1.331005, color="red", size=1.5)
+
+```
+
+### g. Obtain the fitted values ˆyi and the residuals ei from this simple linear regression model. Print the first 5 fitted values and the corresponding residuals.
+
+```{r}
+head(model$fitted.values, 5)
+```
+
+```{r}
+head(model$residuals, 5)
+```
+
+### h. Obtain the predicted graduation rate when the student-to-faculty ratio is 10. Print that value here.
+
+```{r}
+x = data.frame(S.F.Ratio = 10)
+predict(model, x)
+```
+
+The predicted graduation rate is 70.90674%. 
+
+### i. This data is from 1995. Suppose we would like to use insights from this dataset to make predictions on graduation rates in 2022. Unfortunately, we do not have any data currently available for 2022. However, we can still get a sense of the prediction accuracy of our model on data it has never seen before. Explain in plain language how you will do this. Now implement it in R and obtain a realistic estimate of the prediction error for your trained model.
+
+In this situation we will divide the original dataset into 2 parts: 1995 data and 2022 data. We will randomly select data-points for both datasets that we can test the accuracy of our model while simulating the graduation rate and student/faculty ratio in 2022. We don't want repetition in the new data because this can give us values with identical perimeters. In addition, we need to define a seed, otherwise we can run into a situation where we cannot repeat the sampling process and get the same values. 
+
+```{r}
+set.seed(100)
+testIndex = sample(1:777, 777/2, rep=FALSE)
+```
+
+```{r}
+testCollege = College[testIndex, ]
+trainCollege = College[-testIndex, ]
+```
+
+```{r}
+modelTrain = lm(Grad.Rate ~ S.F.Ratio, data = trainCollege)
+#summary(modelTrain)
+MSE_train = mean((trainCollege$Grad.Rate - modelTrain$fitted.values)^2) 
+MSE_train
+```
+
+```{r}
+predictions = predict(modelTrain, testCollege)
+MSE_test = mean((testCollege$Grad.Rate - predictions)^2)
+MSE_test
+```
+
+## Part 3
+
+### a. What are the true values for β0, β1, and β2?
+
+β0 = 2
+
+β1 = 3
+
+β3 = 5
+
+### b. Generate 100 observations Yi using the true population regression line. 
+
+```{r}
+X1 = seq(0,10,length.out =100)
+X2 = runif(100)
+n = 100
+```
+
+### c. Draw a scatterplot of X1 and Y and a scatterplot of X2 and Y . Describe what you observe.
+
+```{r}
+error = rnorm(n, 0, 1)
+Y = 2 + 3*(X1) + 5*log(X2) + error
+```
+
+```{r}
+tempData = data.frame(y = Y, x1 = X1, x2 = X2);
+ggplot(tempData, aes(x = x1, y = y)) + geom_point()
+```
+
+```{r}
+ggplot(tempData, aes(x = x2, y = y)) + geom_point()
+```
+
+We can see that the graph using X1 produce a more consistent graph compare to X2. X1 produce a linear upward trending appearance compare to the noisy random scatter of dots of X2. 
+
+### d. Design a simple simulation to show that ˆβ1 is an unbiased estimator of β1. Note: you should fit a multiple linear regression model here.
+
+```{r} 
+B = 5000
+beta1hat= rep(NA,B)
+#Yhat = rep(NA,B)
+
+for(i in 1:B){
+  error = rnorm(n,0,1)
+  Y = 2 + 3*(X1) + error
+  fit = lm(Y~X1)
+  #Yhat[i] = predict(fit, data.frame(X1=1))
+  fit$coefficients
+  beta1hat[i] = fit$coefficients[[2]]
+}
+```
+
+### e. Plot a histogram of the sampling distribution of the ˆβ1’s you generated. Add a vertical line to the plot showing β1 = 3.
+
+```{r}
+hist(beta1hat)
+abline(v=3, col='blue')
+```
+
+### f. Design a simple simulation to show that ˆβ2 is an unbiased estimator of β2. Note: you should fit a multiple linear regression model here.
+
+```{r}
+beta2hat= rep(NA,B)
+#Yhat = rep(NA,B)
+
+for(i in 1:B){
+  error = rnorm(n,0,1)
+  Y = 2 + 3*(X1) + 5*log(X2) + error
+  fit = lm(Y~X1+log(X2))
+  #Yhat[i] = predict(fit, data.frame(X1=1))
+  fit$coefficients
+  beta2hat[i] =  fit$coefficients[[3]]
+}
+```
+
+### g. Plot a histogram of the sampling distribution of the ˆβ2’s you generated. Add a vertical line to the plot showing β2 = 5.
+
+```{r}
+hist(beta2hat)
+abline(v=5, col='blue')
+```

@@ -1,0 +1,59 @@
+---
+title: "HW6"
+author: "Keven Lin"
+date: "03/22/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ISLR2)
+library(olsrr)
+```
+
+Setup 
+
+```{r}
+set.seed(21)
+size = floor(0.9*nrow(College))
+
+index = sample(seq_len(nrow(College)), size = size)
+train = College[index,]
+test = College[-index, ]
+```
+
+## Forward Selection ~ Using the full dataset
+
+```{r}
+fitstart = lm(Apps ~ 1, data=College)
+summary(fitstart)
+fitall = lm(Apps~., data=College)
+```
+
+```{r}
+#Forward selection with AIC
+step(fitstart, direction = "forward", scope=formula(fitall))
+```
+
+```{r}
+#Forward selection with BIC does not show it but step function said so 
+step(fitstart, direction = "forward", scope=formula(fitall), k=log(n))
+```
+
+```{r}
+step(fitall, direction = "backward", scope=formula(fitstart))
+```
+
+
+```{r}
+# Backward selection with BIC does not show it but step function said so 
+step(fitall, direction = "backward", scope=formula(fitstart), k = log(n))
+```
+
+```{r message=TRUE}
+ols_step_best_subset(fitall)
+
+```

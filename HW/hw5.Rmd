@@ -1,0 +1,468 @@
+---
+title: "hw5"
+author: "Keven Lin"
+date: "03/08/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 1: Bias-variance tradeoff
+
+```{r}
+# a. Use the rnorm() function to generate a predictor X1 of length n = 100
+set.seed(420)
+n =  100
+x = rnorm(n)
+x
+```
+
+```{r}
+# b. Use the rnorm() function to generate the random error term e of length n = 100 with mean 0 and σ = 2.
+
+e = rnorm(n, mean = 0, sd=sqrt(2))
+e
+```
+
+```{r}
+# c. Generate a response Y of length n = 100 according to the true model
+
+y = 1 + 2*x + 3*x**2 + 4*x**3 + e
+y
+```
+
+```{r}
+# d. train and test dataset
+xtrain = x[1:50]
+xtest = x[51:100]
+xtrain
+xtest
+ytrain = y[1:50]
+ytest = y[51:100]
+ytrain 
+ytest
+train = data.frame(y=ytrain, x = xtrain)
+test = data.frame(y=ytest, x = xtest)
+
+train
+test
+```
+
+```{r}
+# e. We are going to fit 10 different models on our training set:
+MSE_TRAIN = rep(NA, 10)
+MSE_TEST = rep(NA, 10)
+
+for(i in 1:10) {
+  model = lm(y~poly(x,i), data=train)
+  MSE_TRAIN[i] = mean(model$residuals^2)
+  model = lm(y~poly(x,i), data=test)
+  MSE_TEST[i] = mean(model$residuals^2)
+}
+
+
+MSE_TRAIN
+MSE_TEST
+
+
+```
+
+```{r}
+# f. In a single plot, plot the training MSE for each of the 10 models. Include your plot and explain what you observe.
+plot(MSE_TRAIN)
+plot(MSE_TEST)
+```
+
+The Training MSE is more uniformed compared to the test mse. We can assumed that 
+
+```{r}
+# g. In a single plot, plot the test MSE for each of the 10 models. Include your plot. Which model has the smallest test MSE? Explain what you observe in terms of the bias-variance tradeoff.
+
+
+```
+
+```{r}
+# h. Generate a new response Ynew of length n = 100 according to the true model
+
+
+
+y = 1 + 2*x + 3*x**2 + 4*x**3 + 5*x**4 + 6*x**5 + 7*x**6 + 8*x**7 + e
+
+
+xtrain = x[1:50]
+xtest = x[51:100]
+xtrain
+xtest
+ytrain = y[1:50]
+ytest = y[51:100]
+ytrain 
+ytest
+
+train = data.frame(y=ytrain, x = xtrain)
+test = data.frame(y=ytest, x = xtest)
+
+
+MSE_TRAIN = rep(NA, 10)
+MSE_TEST = rep(NA, 10)
+
+for(i in 1:10) {
+  model = lm(y~poly(x,i), data=train)
+  MSE_TRAIN[i] = mean(model$residuals^2)
+  model = lm(y~poly(x,i), data=test)
+  MSE_TEST[i] = mean(model$residuals^2)
+}
+
+
+MSE_TRAIN
+MSE_TEST
+
+plot(MSE_TRAIN)
+plot(MSE_TEST)
+
+```
+
+## Problem 2: Best subset selection
+
+```{r}
+prostate = read.table("prostate.data", header=TRUE)
+head(prostate)
+```
+
+```{r}
+# a. approach 1
+library(leaps)
+
+regfit = regsubsets(lpsa ~ ., data=prostate, nbest=1, nvmax=9)
+regfit.sum = summary(regfit)
+regfit.sum
+names(regfit.sum)
+
+n = dim(prostate)[1]
+p = rowSums(regfit.sum$which)
+adjr2 = regfit.sum$adjr2
+cp = regfit.sum$cp
+rss = regfit.sum$rss
+AIC = n*log(rss/n) + 2*(p)
+BIC = n*log(rss/n) + (p)*log(n)
+
+cbind(p,rss,adjr2,cp,AIC,BIC)
+plot(p,BIC)
+plot(p,AIC)
+
+which.min(BIC)
+which.min(AIC)
+which.min(cp)
+which.max(adjr2)
+
+```
+
+The table shows the best models for each model size (numbers of predictors). An example is model 5 with the predictors of lcavol, lweight, age, lbph, svi as these are the best combination to produce the most optimized model. 
+
+Model 3 (lcavol, lweight, svi) has the smallest BIC values of -52.87859.
+
+Model 5 (lcavol, lweight, age, lbph, svi) has the smallest AIC values of -63.72263. 
+
+Model 3 is the best value as the Mallow’s Cp is the smallest and it also has smaller AIC and BIC. 
+
+```{r}
+#  b. approach 2
+train = subset(prostate,train==TRUE)[,1:9]
+test = subset(prostate,train==FALSE)[,1:9]
+```
+
+```{r}
+
+regfit = regsubsets(lpsa ~ ., data=train, nbest=1, nvmax=9)
+regfit.sum = summary(regfit)
+regfit.sum
+names(regfit.sum)
+
+n = dim(prostate)[1]
+p = rowSums(regfit.sum$which)
+adjr2 = regfit.sum$adjr2
+cp = regfit.sum$cp
+rss = regfit.sum$rss
+AIC = n*log(rss/n) + 2*(p)
+BIC = n*log(rss/n) + (p)*log(n)
+
+cbind(p,rss,adjr2,cp,AIC,BIC)
+plot(p,BIC)
+plot(p,AIC)
+
+which.min(BIC)
+which.min(AIC)
+which.min(cp)
+which.max(adjr2)
+
+model1 = lm(lpsa ~ lcavol, data = train)
+model2 = lm(lpsa ~ lcavol+lweight, data = train)
+model3 = lm(lpsa ~ lcavol+lweight+svi , data = train)
+model4 = lm(lpsa ~ lcavol+lweight+svi+lbph, data = train)
+model5 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45, data = train)
+model6 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp, data = train)
+model7 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp+age, data = train)
+model8 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp+age+gleason, data = train)
+
+trainMSE = rep(NA,8)
+testMSE = rep(NA,8)
+trainMSE[1] = mean(model1$residuals^2)
+trainMSE[2] = mean(model2$residuals^2)
+trainMSE[3] = mean(model3$residuals^2)
+trainMSE[4] = mean(model4$residuals^2)
+trainMSE[5] = mean(model5$residuals^2)
+trainMSE[6] = mean(model6$residuals^2)
+trainMSE[7] = mean(model7$residuals^2)
+trainMSE[8] = mean(model8$residuals^2)
+trainMSE
+
+model1 = lm(lpsa ~ lcavol, data = test)
+model2 = lm(lpsa ~ lcavol+lweight, data = test)
+model3 = lm(lpsa ~ lcavol+lweight+svi , data = test)
+model4 = lm(lpsa ~ lcavol+lweight+svi+lbph, data = test)
+model5 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45, data = test)
+model6 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp, data = test)
+model7 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp+age, data = test)
+model8 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp+age+gleason, data = test)
+
+testMSE[1] = mean(model1$residuals^2)
+testMSE[2] = mean(model2$residuals^2)
+testMSE[3] = mean(model3$residuals^2)
+testMSE[4] = mean(model4$residuals^2)
+testMSE[5] = mean(model5$residuals^2)
+testMSE[6] = mean(model6$residuals^2)
+testMSE[7] = mean(model7$residuals^2)
+testMSE[8] = mean(model8$residuals^2)
+testMSE
+
+fullModel = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp+age+gleason, data = prostate)
+summary(fullModel)
+
+
+```
+
+
+```{r}
+k = 3
+folds = sample(1:k,nrow(prostate),replace=TRUE)
+#install.packages('caret')
+library(caret)
+flds <- createFolds(prostate$lpsa, k = 10, list = TRUE, returnTrain = FALSE)
+names(flds)
+flds[[1]]
+flds[[2]]
+
+testMSE1 = rep(NA, 8)
+testMSE2 = rep(NA, 8)
+testMSE3 = rep(NA, 8)
+
+MSE_M1 = MSE_M2 = rep(NA,k)
+for(i in 1:k){
+  test_index = flds[[i]]
+  
+  test = prostate[test_index,]
+  train = prostate[-test_index,]
+  
+  
+  regfit = regsubsets(lpsa ~ ., data=train, nbest=1, nvmax=9)
+  regfit.sum = summary(regfit)
+  regfit.sum
+  names(regfit.sum)
+  
+  n = dim(prostate)[1]
+  p = rowSums(regfit.sum$which)
+  adjr2 = regfit.sum$adjr2
+  cp = regfit.sum$cp
+  rss = regfit.sum$rss
+  AIC = n*log(rss/n) + 2*(p)
+  BIC = n*log(rss/n) + (p)*log(n)
+  
+  cbind(p,rss,adjr2,cp,AIC,BIC)
+  plot(p,BIC)
+  plot(p,AIC)
+  
+  which.min(BIC)
+  which.min(AIC)
+  which.min(cp)
+  which.max(adjr2)
+  
+  model1 = lm(lpsa ~ lcavol, data = train)
+  model2 = lm(lpsa ~ lcavol+lweight, data = train)
+  model3 = lm(lpsa ~ lcavol+lweight+svi , data = train)
+  model4 = lm(lpsa ~ lcavol+lweight+svi+lbph, data = train)
+  model5 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45, data = train)
+  model6 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp, data = train)
+  model7 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp+age, data = train)
+  model8 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp+age+gleason, data = train)
+  
+  trainMSE = rep(NA,8)
+  testMSE = rep(NA,8)
+  trainMSE[1] = mean(model1$residuals^2)
+  trainMSE[2] = mean(model2$residuals^2)
+  trainMSE[3] = mean(model3$residuals^2)
+  trainMSE[4] = mean(model4$residuals^2)
+  trainMSE[5] = mean(model5$residuals^2)
+  trainMSE[6] = mean(model6$residuals^2)
+  trainMSE[7] = mean(model7$residuals^2)
+  trainMSE[8] = mean(model8$residuals^2)
+  trainMSE
+  
+  model1 = lm(lpsa ~ lcavol, data = test)
+  model2 = lm(lpsa ~ lcavol+lweight, data = test)
+  model3 = lm(lpsa ~ lcavol+lweight+svi , data = test)
+  model4 = lm(lpsa ~ lcavol+lweight+svi+lbph, data = test)
+  model5 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45, data = test)
+  model6 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp, data = test)
+  model7 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp+age, data = test)
+  model8 = lm(lpsa ~ lcavol+lweight+svi+lbph+pgg45+lcp+age+gleason, data = test)
+  
+  
+  if(i == 1) {
+  testMSE1[1] = mean(model1$residuals^2)
+  testMSE1[2] = mean(model2$residuals^2)
+  testMSE1[3] = mean(model3$residuals^2)
+  testMSE1[4] = mean(model4$residuals^2)
+  testMSE1[5] = mean(model5$residuals^2)
+  
+  testMSE1[6] = mean(model6$residuals^2)
+  testMSE1[7] = mean(model7$residuals^2)
+  testMSE1[8] = mean(model8$residuals^2)
+  }
+  if (i == 2) {
+  testMSE2[1] = mean(model1$residuals^2)
+  testMSE2[2] = mean(model2$residuals^2)
+  testMSE2[3] = mean(model3$residuals^2)
+  testMSE2[4] = mean(model4$residuals^2)
+  testMSE2[5] = mean(model5$residuals^2)
+  testMSE2[6] = mean(model6$residuals^2)
+  testMSE2[7] = mean(model7$residuals^2)
+  testMSE2[8] = mean(model8$residuals^2)
+  }
+  if (i == 3) {
+  testMSE3[1] = mean(model1$residuals^2)
+  testMSE3[2] = mean(model2$residuals^2)
+  testMSE3[3] = mean(model3$residuals^2)
+  testMSE3[4] = mean(model4$residuals^2)
+  testMSE3[5] = mean(model5$residuals^2)
+  testMSE3[6] = mean(model6$residuals^2)
+  testMSE3[7] = mean(model7$residuals^2)
+  testMSE3[8] = mean(model8$residuals^2)
+  }
+
+}
+testMSEAverage = rep(NA, 8)
+for(i in 1:8) {
+  testMSEAverage[i] = (testMSE1[i] + testMSE2[i] + testMSE3[i])/3
+}
+
+testMSEAverage
+
+```
+
+## Problem 3: Cross-validation
+
+### a. Explain how k-fold cross-validation is implemented
+
+It works by taking the number of observations (the numbers of rows/n) and randomly splitting them into k (non overlapping groups with the length of n/k). The k group will become the validation sets and and the left over will become the training sets. The test error is then estimated by averaging the k resulting MSE estimates.
+
+### b. What are the advantages and disadvantages of k-fold cross-validation relative to:i. The validation set approach?
+
+i. The validation set approach?
+
+A disadvantages of the validation set approach relative to k-fold cross-validation is the validation estimate of the test error rate can be highly variable (depends on which observations are included in the training/validation set). Another disadvantage is that only a subset of the observations are used to fit the model, so the validation set error may overestimate the test error rate for the model fit on the entire data set.
+
+ii. LOOCV?
+
+LOOCV has less bias. We repeatedly fit the statistical learning method using training data that contains n-1 obs., i.e. almost all the data set is used LOOCV produces a less variable MSE. The validation approach produces different MSE when applied repeatedly due to randomness in the splitting process, while performing LOOCV multiple times will always yield the same results, because we split based on 1 obs. each time LOOCV is computationally intensive (disadvantage). We fit the each model n times.
+
+
+### c. 
+
+```{r}
+set.seed(1)
+x = rnorm(100)
+error = rnorm(100,0,1)
+Y = x - 2*x^2 + error
+Y
+```
+
+### d. Set a random seed, and then compute the LOOCV errors that result from fitting the following 4 models using least squares
+
+```{r}
+library(boot)
+library(broom)
+myData = data.frame(y, x)
+cv.error = rep (0, 4) 
+glm.fit =  list()     
+
+
+for (i in 1:4){
+  glm.fit[[i]] = glm(y ~ poly(x, i, raw = T), data = myData)
+  cv.error[i] = cv.glm(my.data, glm.fit[[i]])$delta[1]
+  print(tidy(glm.fit[[i]]))
+}
+cv.error
+```
+
+### e. 
+
+```{r}
+set.seed(2)
+x = rnorm(100)
+error = rnorm(100,0,1)
+y = x - 2*x^2 + error
+
+myData = data.frame(y, x)
+cv.error = rep (0, 4) 
+glm.fit =  list()     
+
+for (i in 1:4){
+  glm.fit[[i]] = glm(y ~ poly(x, i, raw = T), data = myData)
+  cv.error[i] = cv.glm(my.data, glm.fit[[i]])$delta[1]
+  print(tidy(glm.fit[[i]]))
+}
+cv.error
+```
+They are very similar, but different. This could be due to different seeds. 
+
+### f.
+
+
+
+They are very similar, but different. This could be due to different seeds. 
+
+
+### g.
+
+
+Model 2 from the second iteration has the smallest LOOCV error as additional variables like x3 and x4 does not seam to reduce the LOOCV. 
+
+```{r}
+tidy(glm.fit[[2]])
+```
+
+
+The p value is very small, thus the coefficient estimates are statistically significant and close to the true coefficients. 
+
+
+## Problem 4: Concept Review
+
+### a. 
+
+No. Here's why.
+
+Since Model A, B, and C all contains the same amount of predictors, then Mallow's Cp will be very similar to all models are the goal of Mallow's Cp is to prevent over fitting (the penalty will increase for each additional predictors). AIC follows the same principle at Mallow's Cp. BIC follows the same principle as Mallow's CP and AIC. Adjusted R^2 focuses on how accurate the variables are and the amount of noise is present in it. So only determining factor would be adjusted R^2 as it will see how accurate each model is to the data. That will not produce different results. 
+
+### b. 
+
+
+
+### c. 
+
+False, because the higher numbers of predictors will produce lower error term, lower rss.  
+
+
+
